@@ -30,7 +30,7 @@ AInfra is a conversational assistant for developers and cloud beginners alike. T
 
 ---
 
-## 🔍 How it works 
+## 🔍 How it works
 
 Your prompt enters the chat UI. A dispatcher decides how to process your request, coordinating code generation and validation. The result: a Terraform bundle, a validation report, an architecture diagram — plus concise explanations so you understand **why** the code looks the way it does.
 
