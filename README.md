@@ -36,6 +36,20 @@ Your prompt enters the chat UI. A dispatcher decides how to process your request
 
 ---
 
+## Getting started
+
+Bring up the project with the following command:
+
+```bash
+docker compose up -d --build
+```
+
+Stop the project running the following command:
+
+```bash
+docker compose down --rmi all --volumes
+```
+
 ## 🚧 Project status & contributing
 
 AInfra is **alpha**: GCP support is in progress. Pull requests and issue reports are welcome — from new cloud modules and docs to UI polish. See `CONTRIBUTING.md` for guidelines.
