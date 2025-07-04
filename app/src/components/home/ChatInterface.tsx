@@ -11,6 +11,7 @@ interface ChatInterfaceProps {
   selectedProject: Project;
   promptInput: string;
   isSendingPrompt: boolean;
+  isAgentProcessing?: boolean;
   loadingPrompts: boolean;
   messagesEndRef: RefObject<HTMLDivElement | null> | null;
   onPromptInputChange: (value: string) => void;
@@ -24,6 +25,7 @@ export function ChatInterface({
   selectedProject,
   promptInput,
   isSendingPrompt,
+  isAgentProcessing = false,
   loadingPrompts,
   messagesEndRef,
   onPromptInputChange,
@@ -171,6 +173,21 @@ export function ChatInterface({
                 </div>
               );
             })}
+
+            {/* Agent processing indicator */}
+            {isAgentProcessing && (
+              <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg border border-dashed">
+                <div className="flex items-center gap-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Agent is thinking...</span>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
         )}
