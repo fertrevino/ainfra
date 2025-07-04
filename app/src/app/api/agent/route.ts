@@ -17,16 +17,25 @@ export async function POST(request: Request) {
 
     logger.info('Processing agent for project', { project_id });
 
-    // Fetch the latest user prompt for this project
-    const latestPromptQuery = `
+    // Fetch the full conversation history for this project
+    const conversationQuery = `
       SELECT * FROM prompts
-      WHERE project_id = $1 AND role = 'user'
-      ORDER BY created_at DESC
-      LIMIT 1
+      WHERE project_id = $1
+      ORDER BY created_at ASC
     `;
-    const { rows: promptRows } = await pool.query(latestPromptQuery, [project_id]);
+    const { rows: conversationHistory } = await pool.query(conversationQuery, [project_id]);
 
-    if (promptRows.length === 0) {
+    if (conversationHistory.length === 0) {
+      logger.warn('No prompts found for project', { project_id });
+      return NextResponse.json(
+        { error: 'No conversation history found for this project' },
+        { status: 404 }
+      );
+    }
+
+    // Get the latest user prompt specifically
+    const userPrompts = conversationHistory.filter(p => p.role === 'user');
+    if (userPrompts.length === 0) {
       logger.warn('No user prompts found for project', { project_id });
       return NextResponse.json(
         { error: 'No user prompts found for this project' },
@@ -34,8 +43,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const latestPrompt = promptRows[0];
-    logger.debug('Latest prompt found', { prompt: latestPrompt });
+    const latestUserPrompt = userPrompts[userPrompts.length - 1];
+    logger.debug('Conversation history fetched', {
+      totalMessages: conversationHistory.length,
+      latestUserPrompt: latestUserPrompt.content.substring(0, 100) + '...'
+    });
 
     // Call the FastAPI backend agent endpoint
     const backendUrl = process.env.BACKEND_URL;
@@ -45,8 +57,9 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        prompt: latestPrompt.content,
-        project_id: project_id
+        prompt: latestUserPrompt.content,
+        project_id: project_id,
+        conversation_history: conversationHistory
       }),
     });
 
