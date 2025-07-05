@@ -17,35 +17,73 @@ interface CloudTabProps {
   user: User;
 }
 
-interface CredentialsFormData {
+// Base interface with common fields
+interface BaseCredentialsForm {
   name: string;
   provider: CloudProvider;
-  // AWS
+}
+
+// Provider-specific interfaces
+interface AWSCredentialsForm extends BaseCredentialsForm {
+  provider: 'aws';
   accessKeyId: string;
   secretAccessKey: string;
   region: string;
-  // Azure
+}
+
+interface AzureCredentialsForm extends BaseCredentialsForm {
+  provider: 'azure';
   subscriptionId: string;
   tenantId: string;
   clientId: string;
   clientSecret: string;
-  // Google Cloud
+}
+
+interface GCPCredentialsForm extends BaseCredentialsForm {
+  provider: 'gcp';
   projectId: string;
   keyFile: string;
 }
 
-const initialFormData: CredentialsFormData = {
+// Discriminated union type
+type CredentialsFormData = AWSCredentialsForm | AzureCredentialsForm | GCPCredentialsForm;
+
+// Helper functions to create initial form data for each provider
+const createInitialAWSForm = (): AWSCredentialsForm => ({
   name: '',
   provider: 'aws',
   accessKeyId: '',
   secretAccessKey: '',
-  region: 'us-east-1',
+  region: 'us-east-1'
+});
+
+const createInitialAzureForm = (): AzureCredentialsForm => ({
+  name: '',
+  provider: 'azure',
   subscriptionId: '',
   tenantId: '',
   clientId: '',
-  clientSecret: '',
+  clientSecret: ''
+});
+
+const createInitialGCPForm = (): GCPCredentialsForm => ({
+  name: '',
+  provider: 'gcp',
   projectId: '',
   keyFile: ''
+});
+
+const createInitialFormData = (provider: CloudProvider = 'aws'): CredentialsFormData => {
+  switch (provider) {
+    case 'aws':
+      return createInitialAWSForm();
+    case 'azure':
+      return createInitialAzureForm();
+    case 'gcp':
+      return createInitialGCPForm();
+    default:
+      return createInitialAWSForm();
+  }
 };
 
 const cloudProviders = [
@@ -59,7 +97,7 @@ export function CloudTab({ user }: CloudTabProps) {
   const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CredentialsFormData>(initialFormData);
+  const [formData, setFormData] = useState<CredentialsFormData>(createInitialFormData());
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,26 +142,42 @@ export function CloudTab({ user }: CloudTabProps) {
   }, [fetchCredentials]);
 
   const handleCreateCredentials = () => {
-    setFormData(initialFormData);
+    setFormData(createInitialFormData());
     setEditingId(null);
     setShowDialog(true);
     setError(null);
   };
 
   const handleEditCredentials = (cred: CloudCredentials) => {
-    setFormData({
-      name: cred.name,
-      provider: cred.provider,
-      accessKeyId: cred.credentials.accessKeyId || '',
-      secretAccessKey: cred.credentials.secretAccessKey || '',
-      region: cred.credentials.region || 'us-east-1',
-      subscriptionId: cred.credentials.subscriptionId || '',
-      tenantId: cred.credentials.tenantId || '',
-      clientId: cred.credentials.clientId || '',
-      clientSecret: cred.credentials.clientSecret || '',
-      projectId: cred.credentials.projectId || '',
-      keyFile: cred.credentials.keyFile || ''
-    });
+    let newFormData: CredentialsFormData;
+
+    if (cred.provider === 'aws') {
+      newFormData = {
+        name: cred.name,
+        provider: 'aws',
+        accessKeyId: cred.credentials.accessKeyId || '',
+        secretAccessKey: cred.credentials.secretAccessKey || '',
+        region: cred.credentials.region || 'us-east-1'
+      };
+    } else if (cred.provider === 'azure') {
+      newFormData = {
+        name: cred.name,
+        provider: 'azure',
+        subscriptionId: cred.credentials.subscriptionId || '',
+        tenantId: cred.credentials.tenantId || '',
+        clientId: cred.credentials.clientId || '',
+        clientSecret: cred.credentials.clientSecret || ''
+      };
+    } else { // gcp
+      newFormData = {
+        name: cred.name,
+        provider: 'gcp',
+        projectId: cred.credentials.projectId || '',
+        keyFile: cred.credentials.keyFile || ''
+      };
+    }
+
+    setFormData(newFormData);
     setEditingId(cred.id);
     setShowDialog(true);
     setError(null);
@@ -217,7 +271,7 @@ export function CloudTab({ user }: CloudTabProps) {
 
       if (res.ok) {
         setShowDialog(false);
-        setFormData(initialFormData);
+        setFormData(createInitialFormData());
         setEditingId(null);
         fetchCredentials();
       } else {
@@ -278,7 +332,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <Input
                 type="text"
                 value={formData.accessKeyId}
-                onChange={(e) => setFormData(prev => ({ ...prev, accessKeyId: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'aws'
+                    ? { ...prev, accessKeyId: e.target.value }
+                    : prev
+                )}
                 placeholder="AKIA..."
               />
             </div>
@@ -288,7 +346,11 @@ export function CloudTab({ user }: CloudTabProps) {
                 <Input
                   type={showPasswords.secretAccessKey ? "text" : "password"}
                   value={formData.secretAccessKey}
-                  onChange={(e) => setFormData(prev => ({ ...prev, secretAccessKey: e.target.value }))}
+                  onChange={(e) => setFormData(prev =>
+                    prev.provider === 'aws'
+                      ? { ...prev, secretAccessKey: e.target.value }
+                      : prev
+                  )}
                   placeholder="Enter your AWS Secret Access Key"
                   className="pr-10"
                 />
@@ -308,7 +370,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <Input
                 type="text"
                 value={formData.region}
-                onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'aws'
+                    ? { ...prev, region: e.target.value }
+                    : prev
+                )}
                 placeholder="us-east-1"
               />
             </div>
@@ -323,7 +389,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <Input
                 type="text"
                 value={formData.subscriptionId}
-                onChange={(e) => setFormData(prev => ({ ...prev, subscriptionId: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'azure'
+                    ? { ...prev, subscriptionId: e.target.value }
+                    : prev
+                )}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               />
             </div>
@@ -332,7 +402,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <Input
                 type="text"
                 value={formData.tenantId}
-                onChange={(e) => setFormData(prev => ({ ...prev, tenantId: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'azure'
+                    ? { ...prev, tenantId: e.target.value }
+                    : prev
+                )}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               />
             </div>
@@ -341,7 +415,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <Input
                 type="text"
                 value={formData.clientId}
-                onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'azure'
+                    ? { ...prev, clientId: e.target.value }
+                    : prev
+                )}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               />
             </div>
@@ -351,7 +429,11 @@ export function CloudTab({ user }: CloudTabProps) {
                 <Input
                   type={showPasswords.clientSecret ? "text" : "password"}
                   value={formData.clientSecret}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientSecret: e.target.value }))}
+                  onChange={(e) => setFormData(prev =>
+                    prev.provider === 'azure'
+                      ? { ...prev, clientSecret: e.target.value }
+                      : prev
+                  )}
                   placeholder="Enter your Azure Client Secret"
                   className="pr-10"
                 />
@@ -377,7 +459,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <Input
                 type="text"
                 value={formData.projectId}
-                onChange={(e) => setFormData(prev => ({ ...prev, projectId: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'gcp'
+                    ? { ...prev, projectId: e.target.value }
+                    : prev
+                )}
                 placeholder="my-gcp-project"
               />
             </div>
@@ -385,7 +471,11 @@ export function CloudTab({ user }: CloudTabProps) {
               <label className="text-sm font-medium">Service Account Key (JSON)</label>
               <textarea
                 value={formData.keyFile}
-                onChange={(e) => setFormData(prev => ({ ...prev, keyFile: e.target.value }))}
+                onChange={(e) => setFormData(prev =>
+                  prev.provider === 'gcp'
+                    ? { ...prev, keyFile: e.target.value }
+                    : prev
+                )}
                 placeholder='{"type": "service_account", "project_id": "...", ...}'
                 className="w-full h-32 px-3 py-2 text-sm border border-input rounded-md bg-transparent resize-none"
               />
@@ -513,7 +603,12 @@ export function CloudTab({ user }: CloudTabProps) {
               <label className="text-sm font-medium">Cloud Provider</label>
               <select
                 value={formData.provider}
-                onChange={(e) => setFormData(prev => ({ ...prev, provider: e.target.value as CloudProvider }))}
+                onChange={(e) => {
+                  const newProvider = e.target.value as CloudProvider;
+                  const newFormData = createInitialFormData(newProvider);
+                  newFormData.name = formData.name; // Preserve the name
+                  setFormData(newFormData);
+                }}
                 className="w-full h-9 px-3 py-1 text-sm border border-input rounded-md bg-transparent"
                 disabled={!!editingId} // Don't allow changing provider when editing
               >
