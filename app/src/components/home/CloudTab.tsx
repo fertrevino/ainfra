@@ -3,7 +3,6 @@ import { CloudProvider, CloudCredentials, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-// import { supabase } from '@/supabaseClient';
 import {
   CloudIcon,
   PlusIcon,
@@ -66,31 +65,37 @@ export function CloudTab({ user }: CloudTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
+  const session = {
+    data: {
+      session: {
+        access_token: ''
+      }
+    }
+  };
   const fetchCredentials = useCallback(async () => {
     setLoading(true);
-    // try {
-    //   const session = await supabase.auth.getSession();
-    //   const accessToken = session.data.session?.access_token;
+    try {
+      const accessToken = session?.data?.session?.access_token;
+      const res = await fetch(`/api/cloud-credentials?user_id=${user.id}`, {
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        }
+      });
+      console.log('res', res)
 
-    //   const res = await fetch(`/api/cloud-credentials?user_id=${user.id}`, {
-    //     headers: {
-    //       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-    //     }
-    //   });
-
-    //   if (res.ok) {
-    //     const data = await res.json();
-    //     setCredentials(data.credentials || []);
-    //   } else {
-    //     setError('Failed to fetch cloud credentials');
-    //   }
-    // } catch (err) {
-    //   console.error('Error fetching credentials:', err);
-    //   setError('Error fetching cloud credentials');
-    // } finally {
-    //   setLoading(false);
-    // }
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Fetched credentials:', data);
+        setCredentials(data.credentials || []);
+      } else {
+        setError('Failed to fetch cloud credentials');
+      }
+    } catch (err) {
+      console.error('Error fetching credentials:', err);
+      setError('Error fetching cloud credentials');
+    } finally {
+      setLoading(false);
+    }
   }, [user.id]);
 
   // Fetch credentials on component mount
@@ -133,99 +138,98 @@ export function CloudTab({ user }: CloudTabProps) {
     setSaving(true);
     setError(null);
 
-    // try {
-    //   const session = await supabase.auth.getSession();
-    //   const accessToken = session.data.session?.access_token;
+    try {
+      const accessToken = session.data.session?.access_token;
 
-    //   const credentialsData: {
-    //     user_id: string;
-    //     name: string;
-    //     provider: CloudProvider;
-    //     credentials: Record<string, string>;
-    //     id?: string;
-    //   } = {
-    //     user_id: user.id,
-    //     name: formData.name,
-    //     provider: formData.provider,
-    //     credentials: {}
-    //   };
+      const credentialsData: {
+        user_id: string;
+        name: string;
+        provider: CloudProvider;
+        credentials: Record<string, string>;
+        id?: string;
+      } = {
+        user_id: user.id,
+        name: formData.name,
+        provider: formData.provider,
+        credentials: {}
+      };
 
-    //   // Add provider-specific credentials
-    //   if (formData.provider === 'aws') {
-    //     if (!formData.accessKeyId || !formData.secretAccessKey) {
-    //       setError('AWS Access Key ID and Secret Access Key are required');
-    //       setSaving(false);
-    //       return;
-    //     }
-    //     credentialsData.credentials = {
-    //       accessKeyId: formData.accessKeyId,
-    //       secretAccessKey: formData.secretAccessKey,
-    //       region: formData.region
-    //     };
-    //   } else if (formData.provider === 'azure') {
-    //     if (!formData.subscriptionId || !formData.tenantId || !formData.clientId || !formData.clientSecret) {
-    //       setError('All Azure credentials fields are required');
-    //       setSaving(false);
-    //       return;
-    //     }
-    //     credentialsData.credentials = {
-    //       subscriptionId: formData.subscriptionId,
-    //       tenantId: formData.tenantId,
-    //       clientId: formData.clientId,
-    //       clientSecret: formData.clientSecret
-    //     };
-    //   } else if (formData.provider === 'gcp') {
-    //     if (!formData.projectId || !formData.keyFile) {
-    //       setError('GCP Project ID and Service Account Key are required');
-    //       setSaving(false);
-    //       return;
-    //     }
-    //     try {
-    //       JSON.parse(formData.keyFile); // Validate JSON
-    //     } catch {
-    //       setError('Service Account Key must be valid JSON');
-    //       setSaving(false);
-    //       return;
-    //     }
-    //     credentialsData.credentials = {
-    //       projectId: formData.projectId,
-    //       keyFile: formData.keyFile
-    //     };
-    //   }
+      // Add provider-specific credentials
+      if (formData.provider === 'aws') {
+        if (!formData.accessKeyId || !formData.secretAccessKey) {
+          setError('AWS Access Key ID and Secret Access Key are required');
+          setSaving(false);
+          return;
+        }
+        credentialsData.credentials = {
+          accessKeyId: formData.accessKeyId,
+          secretAccessKey: formData.secretAccessKey,
+          region: formData.region
+        };
+      } else if (formData.provider === 'azure') {
+        if (!formData.subscriptionId || !formData.tenantId || !formData.clientId || !formData.clientSecret) {
+          setError('All Azure credentials fields are required');
+          setSaving(false);
+          return;
+        }
+        credentialsData.credentials = {
+          subscriptionId: formData.subscriptionId,
+          tenantId: formData.tenantId,
+          clientId: formData.clientId,
+          clientSecret: formData.clientSecret
+        };
+      } else if (formData.provider === 'gcp') {
+        if (!formData.projectId || !formData.keyFile) {
+          setError('GCP Project ID and Service Account Key are required');
+          setSaving(false);
+          return;
+        }
+        try {
+          JSON.parse(formData.keyFile); // Validate JSON
+        } catch {
+          setError('Service Account Key must be valid JSON');
+          setSaving(false);
+          return;
+        }
+        credentialsData.credentials = {
+          projectId: formData.projectId,
+          keyFile: formData.keyFile
+        };
+      }
 
-    //   const method = editingId ? 'PUT' : 'POST';
-    //   const url = editingId
-    //     ? `/api/cloud-credentials?id=${editingId}`
-    //     : '/api/cloud-credentials';
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId
+        ? `/api/cloud-credentials?id=${editingId}`
+        : '/api/cloud-credentials';
 
-    //   if (editingId) {
-    //     credentialsData.id = editingId;
-    //   }
+      if (editingId) {
+        credentialsData.id = editingId;
+      }
 
-    //   const res = await fetch(url, {
-    //     method,
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-    //     },
-    //     body: JSON.stringify(credentialsData)
-    //   });
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        },
+        body: JSON.stringify(credentialsData)
+      });
 
-    //   if (res.ok) {
-    //     setShowDialog(false);
-    //     setFormData(initialFormData);
-    //     setEditingId(null);
-    //     fetchCredentials();
-    //   } else {
-    //     const errorData = await res.json();
-    //     setError(errorData.error || 'Failed to save credentials');
-    //   }
-    // } catch (err) {
-    //   console.error('Error saving credentials:', err);
-    //   setError('Error saving credentials');
-    // } finally {
-    //   setSaving(false);
-    // }
+      if (res.ok) {
+        setShowDialog(false);
+        setFormData(initialFormData);
+        setEditingId(null);
+        fetchCredentials();
+      } else {
+        const errorData = await res.json();
+        setError(errorData.error || 'Failed to save credentials');
+      }
+    } catch (err) {
+      console.error('Error saving credentials:', err);
+      setError('Error saving credentials');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteClick = (id: string) => {
@@ -236,26 +240,25 @@ export function CloudTab({ user }: CloudTabProps) {
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
     setShowDeleteDialog(false);
-    // try {
-    //   const session = await supabase.auth.getSession();
-    //   const accessToken = session.data.session?.access_token;
-    //   const res = await fetch(`/api/cloud-credentials?id=${deletingId}`, {
-    //     method: 'DELETE',
-    //     headers: {
-    //       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-    //     }
-    //   });
-    //   if (res.ok) {
-    //     fetchCredentials();
-    //   } else {
-    //     setError('Failed to delete credentials');
-    //   }
-    // } catch (err) {
-    //   console.error('Error deleting credentials:', err);
-    //   setError('Error deleting credentials');
-    // } finally {
-    //   setDeletingId(null);
-    // }
+    try {
+      const accessToken = session.data.session?.access_token;
+      const res = await fetch(`/api/cloud-credentials?id=${deletingId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        }
+      });
+      if (res.ok) {
+        fetchCredentials();
+      } else {
+        setError('Failed to delete credentials');
+      }
+    } catch (err) {
+      console.error('Error deleting credentials:', err);
+      setError('Error deleting credentials');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const togglePasswordVisibility = (field: string) => {
