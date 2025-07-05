@@ -119,11 +119,9 @@ export function CloudTab({ user }: CloudTabProps) {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
         }
       });
-      console.log('res', res)
 
       if (res.ok) {
         const data = await res.json();
-        console.log('Fetched credentials:', data);
         setCredentials(data.credentials || []);
       } else {
         setError('Failed to fetch cloud credentials');
