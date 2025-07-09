@@ -1,0 +1,28 @@
+[project]
+name = "ainfra-backend"
+version = "0.1.0"
+description = "AI Infrastructure backend API"
+authors = [
+    {name = "AI Infrastructure Team"}
+]
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "openai-agents",
+    "pydantic",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+]
