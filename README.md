@@ -50,6 +50,20 @@ Stop the project running the following command:
 docker compose down --rmi all --volumes
 ```
 
+## Tests
+
+### End to end tests
+You can run end to end (e2e) tests as follows:
+
+1. Delete all Docker volumes previously created
+2. Run the docker compose stack with `docker compose up --build`
+3. In a separate terminal, run the Playwright UI with:
+```bash
+cd app
+npm run test:e2e:ui
+```
+4. Run the tests in the Playwright window that just opened
+
 ## 🚧 Project status & contributing
 
 AInfra is **alpha**: GCP support is in progress. Pull requests and issue reports are welcome — from new cloud modules and docs to UI polish. See `CONTRIBUTING.md` for guidelines.

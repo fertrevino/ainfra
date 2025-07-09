@@ -67,7 +67,7 @@ export function ProjectSidebar({
               variant="outline"
               size="sm"
             >
-              Create your first project
+              Create project
             </Button>
           </div>
         ) : (

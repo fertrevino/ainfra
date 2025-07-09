@@ -17,7 +17,7 @@ import {
 
 // This will be replaced with actual user authentication logic
 const user: User = {
-  id: 'dummy-user-123',
+  id: '11111111-1111-1111-1111-111111111111',
   email: 'dummyuser@example.com',
   full_name: 'Dummy User',
   created_at: '2024-01-01T00:00:00.000Z',
@@ -75,6 +75,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('chat');
   const [promptInput, setPromptInput] = useState('');
   const [isSendingPrompt, setIsSendingPrompt] = useState(false);
+  const [isAgentProcessing, setIsAgentProcessing] = useState(false);
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -350,6 +351,40 @@ export default function Home() {
           return updatedPrompts;
         });
 
+        // Trigger agent processing after successfully storing the user prompt
+        try {
+          setIsAgentProcessing(true);
+
+          const agentRes = await fetch('/api/agent', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+            },
+            body: JSON.stringify({
+              project_id: selectedProject.id
+            }),
+          });
+
+          if (agentRes.ok) {
+            const agentResponseData = await agentRes.json();
+
+            // Add the agent's response to the conversation
+            if (agentResponseData.prompt) {
+              setPrompts(prevPrompts => [...prevPrompts, agentResponseData.prompt]);
+            }
+          } else {
+            const agentErrorData = await agentRes.json();
+            console.error('Failed to process agent:', agentErrorData);
+            // You might want to show a user-friendly error message here
+          }
+        } catch (agentError) {
+          console.error('Error processing agent:', agentError);
+          // You might want to show a user-friendly error message here
+        } finally {
+          setIsAgentProcessing(false);
+        }
+
         // We don't need to fetch all prompts here - we've already updated our local state
       } else {
         const errorData = await res.json();
@@ -427,6 +462,7 @@ export default function Home() {
                     selectedProject={selectedProject}
                     promptInput={promptInput}
                     isSendingPrompt={isSendingPrompt}
+                    isAgentProcessing={isAgentProcessing}
                     loadingPrompts={loadingPrompts}
                     messagesEndRef={messagesEndRef}
                     onPromptInputChange={setPromptInput}
