@@ -5,6 +5,7 @@ import { useUniquePrompts } from "@/hooks/useUniquePrompts";
 import { useCloudCredentials } from "@/hooks/useCloudCredentials";
 import { CloudCredentialsPrompt } from "./CloudCredentialsPrompt";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { renderContentWithCodeBlocks } from "@/lib/codeBlockParser";
 
 interface ChatInterfaceProps {
   prompts: Prompt[];
@@ -143,11 +144,13 @@ export function ChatInterface({
                           <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
                           ⏳
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-amber-600 dark:text-amber-400 mb-1">
                             Working on it<span className="inline-block animate-bounce">.</span><span className="inline-block animate-bounce delay-100">.</span><span className="inline-block animate-bounce delay-200">.</span>
                           </p>
-                          <p className="text-muted-foreground">{prompt.content.replace('⏳', '').trim()}</p>
+                          <div className="text-muted-foreground">
+                            {renderContentWithCodeBlocks(prompt.content.replace('⏳', '').trim())}
+                          </div>
                         </div>
                       </div>
                     ) : prompt.content.includes('❌') ? (
@@ -155,15 +158,19 @@ export function ChatInterface({
                         <div className="text-red-500 mr-2 flex-shrink-0 text-xl">
                           ❌
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-red-600 dark:text-red-400 mb-1">
                             Task Failed
                           </p>
-                          <p className="text-muted-foreground">{prompt.content.replace('❌', '').trim()}</p>
+                          <div className="text-muted-foreground">
+                            {renderContentWithCodeBlocks(prompt.content.replace('❌', '').trim())}
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <p>{prompt.content}</p>
+                      <div>
+                        {renderContentWithCodeBlocks(prompt.content)}
+                      </div>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1 flex justify-between">
