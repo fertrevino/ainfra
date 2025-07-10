@@ -27,7 +27,7 @@ create table infra_plans (
   created_at timestamp with time zone not null default now(),
   project_id uuid not null default gen_random_uuid (),
   ir_json jsonb null,
-  tf_path text null,
+  tf_zip_data bytea null;
   clouds text[] null,
   status text not null default '''generated'''::text,
   cost_estimate numeric null,
@@ -38,9 +38,14 @@ create table infra_plans (
     (
       status = any (
         array[
-          'generated'::text,
-          'applied'::text,
-          'failed'::text
+        'generated'::text,
+        'applied'::text,
+        'failed'::text,
+        'planned'::text,
+        'plan_failed'::text,
+        'apply_failed'::text,
+        'destroyed'::text,
+        'destroy_failed'::text
         ]
       )
     )
